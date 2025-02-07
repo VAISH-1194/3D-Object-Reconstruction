@@ -23,8 +23,11 @@ def generate_mesh(depth_maps, output_dir):
         ply_path = os.path.join(output_dir, f"pointcloud_{i}.ply")
         o3d.io.write_point_cloud(ply_path, pcd)
 
-        # Convert point cloud to mesh
+        pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+        pcd.orient_normals_consistent_tangent_plane(k=10)
+
         mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)
+
         mesh_path = os.path.join(output_dir, f"mesh_{i}.obj")
         o3d.io.write_triangle_mesh(mesh_path, mesh)
 
