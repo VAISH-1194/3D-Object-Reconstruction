@@ -16,10 +16,8 @@ def process_3d_model(image_path):
     os.makedirs("data/images", exist_ok=True)
     shutil.copy(image_path, "data/images/input_image.jpg")
     
-    # Run the 3D reconstruction pipeline
     subprocess.run(["python", "src/main.py", "--method", "mvs", "--input_dir", "data/images", "--output_dir", output_dir])
     
-    # Create ZIP file containing the 3D model
     zip_filename = "3D_object.zip"
     with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for file in os.listdir(output_dir):
@@ -29,7 +27,6 @@ def process_3d_model(image_path):
     messagebox.showinfo("Success", f"3D model saved as {zip_filename}")
     os.startfile(zip_filename)
 
-# Create Tkinter GUI
 root = tk.Tk()
 root.title("3D Reconstruction")
 root.geometry("400x200")
