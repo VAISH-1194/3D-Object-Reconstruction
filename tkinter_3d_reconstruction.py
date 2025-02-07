@@ -1,60 +1,42 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
+import shutil
+import zipfile
 import subprocess
 
 def select_image():
     file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
     if file_path:
-        entry_image_path.delete(0, tk.END)
-        entry_image_path.insert(0, file_path)
+        image_label.config(text=f"Selected: {os.path.basename(file_path)}")
+        process_3d_model(file_path)
 
-def run_reconstruction():
-    image_path = entry_image_path.get()
+def process_3d_model(image_path):
     output_dir = "outputs"
-    method = method_var.get()
-    
-    if not os.path.exists(image_path):
-        messagebox.showerror("Error", "Please select a valid image file.")
-        return
-    
     os.makedirs("data/images", exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
+    shutil.copy(image_path, "data/images/input_image.jpg")
     
-    image_name = os.path.basename(image_path)
-    new_image_path = os.path.join("data/images", image_name)
+    # Run the 3D reconstruction pipeline
+    subprocess.run(["python", "src/main.py", "--method", "mvs", "--input_dir", "data/images", "--output_dir", output_dir])
     
-    # Copy image to data/images
-    os.system(f"copy \"{image_path}\" \"{new_image_path}\"")
+    # Create ZIP file containing the 3D model
+    zip_filename = "3D_object.zip"
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for file in os.listdir(output_dir):
+            if file.endswith(".obj") or file.endswith(".ply"):
+                zipf.write(os.path.join(output_dir, file), file)
     
-    # Run the reconstruction pipeline
-    command = f"python src/main.py --method {method} --input_dir data/images --output_dir {output_dir}"
-    subprocess.run(command, shell=True)
-    
-    # Check for output file
-    obj_files = [f for f in os.listdir(output_dir) if f.endswith(".obj")]
-    if obj_files:
-        messagebox.showinfo("Success", f"3D Model Generated: {os.path.join(output_dir, obj_files[0])}")
-    else:
-        messagebox.showerror("Error", "3D Model generation failed.")
+    messagebox.showinfo("Success", f"3D model saved as {zip_filename}")
+    os.startfile(zip_filename)
 
-# GUI Setup
+# Create Tkinter GUI
 root = tk.Tk()
-root.title("3D Reconstruction Tool")
-root.geometry("500x300")
+root.title("3D Reconstruction")
+root.geometry("400x200")
 
-tk.Label(root, text="Select Image:").pack(pady=5)
-entry_image_path = tk.Entry(root, width=50)
-entry_image_path.pack()
-tk.Button(root, text="Browse", command=select_image).pack(pady=5)
+tk.Label(root, text="Upload an image to generate a 3D model").pack(pady=10)
+image_label = tk.Label(root, text="No image selected")
+image_label.pack()
 
-# Choose Method
-tk.Label(root, text="Select Reconstruction Method:").pack(pady=5)
-method_var = tk.StringVar(value="mvs")
-tk.Radiobutton(root, text="MVS", variable=method_var, value="mvs").pack()
-tk.Radiobutton(root, text="NeRF", variable=method_var, value="nerf").pack()
-
-tk.Button(root, text="Run Reconstruction", command=run_reconstruction).pack(pady=10)
-
+tk.Button(root, text="Select Image", command=select_image).pack(pady=10)
 root.mainloop()
-
