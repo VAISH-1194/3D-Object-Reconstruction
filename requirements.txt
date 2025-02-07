@@ -1,0 +1,15 @@
+numpy
+opencv-python
+torch
+torchvision
+matplotlib
+Pillow
+trimesh
+pybullet
+imageio
+imageio-ffmpeg
+scikit-image
+mediapipe
+open3d
+rembg
+transformers
